@@ -5,7 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+<<<<<<< HEAD
     "dev": "node app.mjs",
+=======
+>>>>>>> 9674ad582012adae77fe7310df0412ecd7bf5bd1
     "start": "nodemon app.mjs"
   },
   "keywords": [],
