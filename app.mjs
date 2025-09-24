@@ -1,16 +1,11 @@
 import express from "express";
 
 const PORT = 3000;
-<<<<<<< HEAD
-=======
-
->>>>>>> 9674ad582012adae77fe7310df0412ecd7bf5bd1
 const app = express();
 
 app.use(express.json());
 
 app.get("/", (req, res) => {
-<<<<<<< HEAD
   res.send("go to postman to use post to create new account")
 });
 
@@ -52,29 +47,12 @@ app.post("/signup", (req, res) => {
   }
 
 
-=======
-  res.send("Hi mom");
-});
-
-app.post("/signup", (req, res) => {
-  if (!req.body) {
-    return res.status(400).send({ message: "Body required" });
-  }
-  const body = req.body;
-  if (!body.credential) {
-    return res.status(400).send({ message: "Credential required" });
-  }
-  if (!body.password) {
-    return res.status(400).send({ message: "Password required" });
-  }
->>>>>>> 9674ad582012adae77fe7310df0412ecd7bf5bd1
   if (!body.fullname) {
     return res.status(400).send({ message: "Fullname required" });
   }
   if (!body.username) {
     return res.status(400).send({ message: "Username required" });
   }
-<<<<<<< HEAD
   if (body.credential.includes("@")) {
     credentialType = "email";
   } else {
@@ -90,12 +68,7 @@ app.post("/signup", (req, res) => {
 
   return res.send({ message: "Welcome to Instagram" });
 });
-=======
 
-  return res.send({ message: "Welcome to instagram" });
-});
-
->>>>>>> 9674ad582012adae77fe7310df0412ecd7bf5bd1
 app.listen(PORT, () => {
   console.log(`Your app is running on http://localhost:${PORT}`);
 });
