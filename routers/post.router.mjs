@@ -11,9 +11,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
     const postId = req.params.id;
     const post = await PostModel.findById(postId);
-    if (!post) {
-        return res.status(404).send({ message: "Post not found!" });
-    }
+    if (!post) return res.status(404).send({ message: "Post not found!" });
     return res.send(post);
 });
 
