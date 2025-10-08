@@ -27,7 +27,7 @@ router.post("/signup", async (req, res) => {
         const user = new UserModel({ fullname, username, email, phone, password: hashedPassword });
         await user.save();
 
-        res.send({ message: "User created", body: user });
+        res.send({ message: "User created", body: { ...user.toObject(), password: undefined } });
     } catch (err) {
         console.error(err);
         res.status(500).send({ message: "Server error", error: err.message });
@@ -55,7 +55,17 @@ router.post("/signin", async (req, res) => {
             { expiresIn: "7d" }
         );
 
-        res.send({ message: "You are signed in", body: { ...user.toObject(), token } });
+        res.send({
+            message: "You are signed in",
+            body: {
+                _id: user._id,
+                username: user.username,
+                fullname: user.fullname,
+                email: user.email,
+                phone: user.phone,
+                token,
+            },
+        });
     } catch (err) {
         console.error(err);
         res.status(500).send({ message: "Server error", error: err.message });

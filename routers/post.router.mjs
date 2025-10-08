@@ -1,76 +1,75 @@
 import express from "express";
 import { PostModel } from "../models/post.model.mjs";
+import { UserModel } from "../models/user.model.mjs";
 
 const router = express.Router();
 
+// ===== Get all posts =====
 router.get("/", async (req, res) => {
-    const result = await PostModel.find();
-    return res.send(result);
+    try {
+        const posts = await PostModel.find()
+            .populate("user", "username fullname avatar") // populate user info
+            .sort({ createdAt: -1 });
+
+        res.send(posts);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Server error", error: err.message });
+    }
+});
+// Toggle like
+router.post("/:id/like", async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const userId = req.body.userId; // frontend sends this
+        if (!userId) return res.status(400).send({ message: "userId required" });
+
+        const post = await PostModel.findById(postId);
+        if (!post) return res.status(404).send({ message: "Post not found" });
+
+        // store liked users in an array (optional: you can track user-specific likes)
+        if (!post.likedUsers) post.likedUsers = [];
+
+        const likedIndex = post.likedUsers.indexOf(userId);
+        if (likedIndex === -1) {
+            post.likedUsers.push(userId); // like
+        } else {
+            post.likedUsers.splice(likedIndex, 1); // unlike
+        }
+
+        post.likes = post.likedUsers.length; // update likes count
+        await post.save();
+
+        res.send({ message: "Post updated", likes: post.likes, likedUsers: post.likedUsers });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Server error" });
+    }
 });
 
-router.get("/:id", async (req, res) => {
-    const postId = req.params.id;
-    const post = await PostModel.findById(postId);
-    if (!post) return res.status(404).send({ message: "Post not found!" });
-    return res.send(post);
-});
-
+// ===== Create post =====
 router.post("/", async (req, res) => {
-    if (!req.body) {
-        return res.status(400).send({ message: "Body required!" });
-    }
-    const { description, imageUrl } = req.body;
+    try {
+        const { description, imageUrl, userId } = req.body; // userId must be provided by frontend
+        if (!description || !imageUrl || !userId)
+            return res.status(400).send({ message: "description, imageUrl and userId required" });
 
-    if (!description) {
-        return res.status(400).send({ message: "description required!" });
-    }
-    if (!imageUrl) {
-        return res.status(400).send({ message: "imageUrl required!" });
-    }
-    const post = await PostModel.create({ description, imageUrl }, { isNew: true });
-    return res.send({ message: "Post created successfully", body: post });
-});
+        // Check if user exists
+        const user = await UserModel.findById(userId);
+        if (!user) return res.status(404).send({ message: "User not found" });
 
-router.delete("/:id", async (req, res) => {
-    const postId = req.params.id;
-    const post = await PostModel.findById(postId);
-    if (!post) {
-        return res.status(404).send({ message: "Post not found!" });
+        const post = await PostModel.create({
+            description,
+            imageUrl,
+            user: user._id,
+        });
+
+        const populatedPost = await post.populate("user", "username fullname avatar");
+        res.send({ message: "Post created", body: populatedPost });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ message: "Server error", error: err.message });
     }
-    await PostModel.deleteOne({ _id: postId });
-    return res.send({ message: "Successfully deleted post" });
-});
-
-router.put("/:id", async (req, res) => {
-    const postId = req.params.id;
-    const post = await PostModel.findById(postId);
-    if (!post) {
-        return res.status(404).send({ message: "Post not found!" });
-    }
-    if (!req.body) {
-        return res.status(400).send({ message: "Body required!" });
-    }
-    const { description, imageUrl } = req.body;
-
-    await PostModel.updateOne({ _id: postId }, { description, imageUrl });
-
-    return res.send({ message: "Successfully updated post", body: { ...post, description, imageUrl } });
-});
-
-router.patch("/:id", async (req, res) => {
-    const postId = req.params.id;
-    const post = await PostModel.findById(postId);
-    if (!post) {
-        return res.status(404).send({ message: "Post not found!" });
-    }
-    if (!req.body) {
-        return res.status(400).send({ message: "Body required!" });
-    }
-    const { description, imageUrl } = req.body;
-
-    await PostModel.updateOne({ _id: postId }, { description, imageUrl });
-
-    return res.send({ message: "Successfully updated post", body: { ...post, description, imageUrl } });
 });
 
 export default router;

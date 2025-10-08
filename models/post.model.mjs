@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 
-export const PostModel = mongoose.model("Post", {
-    description: String,
-    imageUrl: String,
+const PostSchema = new mongoose.Schema(
+    {
+        description: String,
+        imageUrl: String,
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        likes: { type: Number, default: 0 },
+        likedUsers: { type: [String], default: [] }, // store userIds
+    },
+    { timestamps: true } // auto-manage createdAt and updatedAt
+);
 
-    createdAt: Date,
-    updatedAt: Date,
-});
+export const PostModel = mongoose.model("Post", PostSchema);
