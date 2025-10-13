@@ -9,13 +9,35 @@ router.get("/", async (req, res) => {
         const posts = await PostModel.find()
             .populate("user", "username fullname avatar")
             .sort({ createdAt: -1 });
-
         res.send(posts);
     } catch (err) {
         console.error(err);
         res.status(500).send({ message: "Server error", error: err.message });
     }
 });
+router.post("/:postId/comments", async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { userId, username, text } = req.body;
+
+        if (!text || !username) {
+            return res.status(400).json({ message: "Comment text and username required" });
+        }
+
+        const post = await PostModel.findById(postId);
+        if (!post) return res.status(404).json({ message: "Post not found" });
+
+        post.comments.push({ user: username, text, userId });
+        await post.save();
+
+        res.status(200).json(post); // send back updated post
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
 
 router.post("/:id/like", async (req, res) => {
     try {
