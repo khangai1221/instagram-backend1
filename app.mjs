@@ -1,5 +1,4 @@
 import express from "express";
-
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -10,8 +9,13 @@ import userRouter from "./routers/user.router.mjs";
 
 dotenv.config();
 
-const PORT = 5500;
+const PORT = process.env.PORT || 5500;
+const MONGO_URL = process.env.MONGO_URL;
 
+if (!MONGO_URL) {
+  console.error("Error: MONGO_URL is not set in your environment variables.");
+  process.exit(1);
+}
 
 const app = express();
 app.use(cors());
@@ -22,12 +26,19 @@ app.get("/", (req, res) => {
 });
 
 app.use("/posts", PostRouter);
-
 app.use(AuthRouter);
-
 app.use("/users", userRouter);
 
-app.listen(PORT, () => {
-  mongoose.connect(process.env.MONGO_URL);
-  console.log(`Your app is running on http://localhost:${PORT}`);
-});
+// Connect to MongoDB first
+mongoose
+  .connect(MONGO_URL)
+  .then(() => {
+    console.log("MongoDB connected successfully");
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });

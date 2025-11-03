@@ -8,6 +8,7 @@ router.get("/", async (req, res) => {
         const users = await UserModel.find().select("_id username fullname createdAt");
 
         res.send({ message: "Users fetched", body: users });
+
     } catch (err) {
         res.status(500).send({ message: "Server error", error: err });
     }
