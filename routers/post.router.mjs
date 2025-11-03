@@ -4,11 +4,10 @@ import { UserModel } from "../models/user.model.mjs";
 
 const router = express.Router();
 
-// ---------------------- GET SINGLE POST ----------------------
 router.get("/:id", async (req, res) => {
     try {
         const post = await PostModel.findById(req.params.id)
-            .populate("user", "username fullname avatar"); // populate user
+            .populate("user", "username fullname avatar");
 
         if (!post) return res.status(404).json({ message: "Post not found" });
 
@@ -19,7 +18,6 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// ---------------------- GET ALL POSTS ----------------------
 router.get("/", async (req, res) => {
     try {
         const { userId } = req.query;
@@ -36,7 +34,6 @@ router.get("/", async (req, res) => {
     }
 });
 
-// ---------------------- CREATE POST ----------------------
 router.post("/", async (req, res) => {
     try {
         const { description, imageUrl, userId } = req.body;
@@ -57,7 +54,6 @@ router.post("/", async (req, res) => {
     }
 });
 
-// ---------------------- UPDATE POST ----------------------
 router.patch("/:id", async (req, res) => {
     try {
         const { description, imageUrl, userId } = req.body;
@@ -80,7 +76,6 @@ router.patch("/:id", async (req, res) => {
     }
 });
 
-// ---------------------- DELETE POST ----------------------
 router.delete("/:id", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -99,7 +94,6 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
-// ---------------------- TOGGLE LIKE ----------------------
 router.post("/:id/like", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -109,8 +103,8 @@ router.post("/:id/like", async (req, res) => {
         if (!post.likedUsers) post.likedUsers = [];
 
         const index = post.likedUsers.indexOf(userId);
-        if (index === -1) post.likedUsers.push(userId); // add like
-        else post.likedUsers.splice(index, 1); // remove like
+        if (index === -1) post.likedUsers.push(userId);
+        else post.likedUsers.splice(index, 1);
 
         post.likes = post.likedUsers.length;
         await post.save();
@@ -125,7 +119,6 @@ router.post("/:id/like", async (req, res) => {
     }
 });
 
-// ---------------------- ADD COMMENT ----------------------
 router.post("/:id/comments", async (req, res) => {
     try {
         const { userId, username, text } = req.body;
