@@ -10,8 +10,13 @@ export const UserModel = mongoose.model(
             username: { type: String, required: true },
             email: { type: String, default: null },
             phone: { type: String, default: null },
+            bio: { type: String, default: null },
+            website: { type: String, default: null },
             password: { type: String, required: true },
             avatar: { type: String, default: "" },
+            followers: [{ type: String, ref: "User", default: [] }],
+            following: [{ type: String, ref: "User", default: [] }],
+
         },
         { timestamps: true }
     )
