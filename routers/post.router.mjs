@@ -112,6 +112,30 @@ router.post("/:id/like", async (req, res) => {
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
+router.post("/upload", async (req, res) => {
+    try {
+        const { description, imageUrl } = req.body;
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+        // Decode JWT (make sure your secret matches)
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!description) return res.status(400).json({ message: "Description required" });
+
+        const newPost = await PostModel.create({
+            description,
+            imageUrl,
+            user: payload.id, // store the real user id
+        });
+
+        const populatedPost = await newPost.populate("user", "username fullname avatar");
+
+        res.status(201).json(populatedPost);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 // ADD comment to a post
 router.post("/:id/comments", async (req, res) => {
@@ -135,10 +159,15 @@ router.post("/:id/comments", async (req, res) => {
 });
 router.get("/", async (req, res) => {
     try {
-        const posts = await PostModel.find().sort({ createdAt: -1 });
+        const posts = await PostModel.find()
+            .populate("user", "username fullname avatar") // get only needed fields
+            .sort({ createdAt: -1 });
+
         res.json(posts);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
+
 export default router;
