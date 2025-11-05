@@ -1,9 +1,10 @@
-// app.mjs
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import multer from "multer";
 import path from "path";
+import { fileURLToPath } from "url";
 
 import PostRouter from "./routers/post.router.mjs";
 import AuthRouter from "./routers/auth.router.mjs";
@@ -19,26 +20,23 @@ if (!MONGO_URL) {
   process.exit(1);
 }
 
-const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// --- MIDDLEWARE ---
+const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // serve uploaded images
 
-// Serve uploads folder statically
-app.use("/uploads", express.static(path.resolve("./uploads")));
-
-// --- ROUTES ---
 app.get("/", (req, res) => {
   res.send("Hi server");
 });
 
-app.use("/posts", PostRouter); // Handles upload + get posts
-app.use(AuthRouter);            // Auth routes
-app.use("/users", userRouter);  // User routes
+app.use("/posts", PostRouter);
+app.use("/auth", AuthRouter);
+app.use("/users", userRouter);
 
-// --- MONGODB CONNECTION & SERVER START ---
+// Connect to MongoDB
 mongoose
   .connect(MONGO_URL)
   .then(() => {

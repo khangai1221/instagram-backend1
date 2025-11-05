@@ -1,64 +1,8 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
-import fs from "fs"
 import { PostModel } from "../models/post.model.mjs";
 import { UserModel } from "../models/user.model.mjs";
 
 const router = express.Router();
-const uploadDir = path.join(process.cwd(), "uploads");
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "uploads/"),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, Date.now() + ext);
-    },
-});
-const upload = multer({ storage });
-router.post("/upload", upload.single("image"), async (req, res) => {
-    try {
-        const { description, userId } = req.body;
-
-        if (!description || !userId)
-            return res.status(400).json({ message: "description and userId required" });
-
-        const user = await UserModel.findById(userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        if (!req.file) return res.status(400).json({ message: "Please select an image" });
-
-        const imageUrl = `/uploads/${req.file.filename}`;
-
-        const post = await PostModel.create({
-            description,
-            imageUrl,
-            user: user._id,
-        });
-
-        const populatedPost = await post.populate("user", "username fullname avatar");
-        res.json(populatedPost);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error", error: err.message });
-    }
-});
-router.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-// GET all posts
-router.get("/", async (req, res) => {
-    try {
-        const { userId } = req.query;
-        const filter = userId ? { user: userId } : {};
-
-        const posts = await PostModel.find(filter)
-            .populate("user", "username fullname avatar")
-            .sort({ createdAt: -1 });
-
-        res.json(posts);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error", error: err.message });
-    }
-});
 
 // GET single post by ID
 router.get("/:id", async (req, res) => {
@@ -88,7 +32,7 @@ router.post("/", async (req, res) => {
 
         const post = await PostModel.create({
             description,
-            imageUrl: imageUrl || "", // use empty string if no image
+            imageUrl: imageUrl || "",
             user: user._id,
         });
 
@@ -96,7 +40,7 @@ router.post("/", async (req, res) => {
 
         res.json({ message: "Post created", body: populatedPost });
     } catch (err) {
-        console.error(err); // check server logs for exact cause
+        console.error(err);
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
