@@ -3,16 +3,29 @@ import { UserModel } from "../models/user.model.mjs";
 
 const router = express.Router();
 
+// GET /users?search=username
 router.get("/", async (req, res) => {
     try {
-        const users = await UserModel.find().select("_id username fullname createdAt");
+        const search = req.query.search || "";
+        let users;
+
+        if (search) {
+            // case-insensitive search on username
+            users = await UserModel.find({
+                username: { $regex: search, $options: "i" },
+            }).select("_id username fullname avatar createdAt");
+        } else {
+            // return all users if no search query
+            users = await UserModel.find().select("_id username fullname avatar createdAt");
+        }
 
         res.send({ message: "Users fetched", body: users });
-
     } catch (err) {
+        console.error(err);
         res.status(500).send({ message: "Server error", error: err });
     }
 });
+
 router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { fullname, username, bio, website, avatar } = req.body;
