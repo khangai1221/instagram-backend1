@@ -1,23 +1,49 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs"
 import { PostModel } from "../models/post.model.mjs";
 import { UserModel } from "../models/user.model.mjs";
 
 const router = express.Router();
-
-router.get("/:id", async (req, res) => {
+const uploadDir = path.join(process.cwd(), "uploads");
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, "uploads/"),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, Date.now() + ext);
+    },
+});
+const upload = multer({ storage });
+router.post("/upload", upload.single("image"), async (req, res) => {
     try {
-        const post = await PostModel.findById(req.params.id)
-            .populate("user", "username fullname avatar");
+        const { description, userId } = req.body;
 
-        if (!post) return res.status(404).json({ message: "Post not found" });
+        if (!description || !userId)
+            return res.status(400).json({ message: "description and userId required" });
 
-        res.json(post);
+        const user = await UserModel.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        if (!req.file) return res.status(400).json({ message: "Please select an image" });
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+
+        const post = await PostModel.create({
+            description,
+            imageUrl,
+            user: user._id,
+        });
+
+        const populatedPost = await post.populate("user", "username fullname avatar");
+        res.json(populatedPost);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
-
+router.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// GET all posts
 router.get("/", async (req, res) => {
     try {
         const { userId } = req.query;
@@ -34,26 +60,48 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.post("/", async (req, res) => {
+// GET single post by ID
+router.get("/:id", async (req, res) => {
     try {
-        const { description, imageUrl, userId } = req.body;
-        if (!description || !imageUrl || !userId) {
-            return res.status(400).json({ message: "description, imageUrl and userId required" });
-        }
+        const post = await PostModel.findById(req.params.id)
+            .populate("user", "username fullname avatar");
 
-        const user = await UserModel.findById(userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
+        if (!post) return res.status(404).json({ message: "Post not found" });
 
-        const post = await PostModel.create({ description, imageUrl, user: user._id });
-        const populatedPost = await post.populate("user", "username fullname avatar");
-
-        res.json(populatedPost);
+        res.json(post);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
 
+router.post("/", async (req, res) => {
+    try {
+        const { description, imageUrl, userId } = req.body;
+
+        if (!description || !userId) {
+            return res.status(400).json({ message: "description and userId required" });
+        }
+
+        const user = await UserModel.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const post = await PostModel.create({
+            description,
+            imageUrl: imageUrl || "", // use empty string if no image
+            user: user._id,
+        });
+
+        const populatedPost = await post.populate("user", "username fullname avatar");
+
+        res.json({ message: "Post created", body: populatedPost });
+    } catch (err) {
+        console.error(err); // check server logs for exact cause
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+});
+
+// UPDATE a post
 router.patch("/:id", async (req, res) => {
     try {
         const { description, imageUrl, userId } = req.body;
@@ -76,6 +124,7 @@ router.patch("/:id", async (req, res) => {
     }
 });
 
+// DELETE a post
 router.delete("/:id", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -94,6 +143,7 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
+// LIKE / UNLIKE a post
 router.post("/:id/like", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -111,7 +161,7 @@ router.post("/:id/like", async (req, res) => {
 
         res.json({
             likes: post.likes,
-            likedUsers: post.likedUsers
+            likedUsers: post.likedUsers,
         });
     } catch (err) {
         console.error(err);
@@ -119,13 +169,15 @@ router.post("/:id/like", async (req, res) => {
     }
 });
 
+// ADD comment to a post
 router.post("/:id/comments", async (req, res) => {
     try {
         const { userId, username, text } = req.body;
         const post = await PostModel.findById(req.params.id);
         if (!post) return res.status(404).json({ message: "Post not found" });
 
-        if (!text || !username) return res.status(400).json({ message: "Comment text and username required" });
+        if (!text || !username)
+            return res.status(400).json({ message: "Comment text and username required" });
 
         if (!post.comments) post.comments = [];
         post.comments.push({ user: username, userId, text });
@@ -137,5 +189,12 @@ router.post("/:id/comments", async (req, res) => {
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
-
+router.get("/", async (req, res) => {
+    try {
+        const posts = await PostModel.find().sort({ createdAt: -1 });
+        res.json(posts);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 export default router;
