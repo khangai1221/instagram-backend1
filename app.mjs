@@ -32,9 +32,9 @@ app.get("/", (req, res) => {
   res.send("Hi server");
 });
 
-app.use("/posts", PostRouter);
-app.use("/auth", AuthRouter);
-app.use("/users", userRouter);
+app.use("/api/posts", PostRouter);
+app.use("/api/auth", AuthRouter);
+app.use("/api/users", userRouter);
 
 // Connect to MongoDB
 mongoose
