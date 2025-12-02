@@ -2,11 +2,11 @@
   "name": "instagram-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.mjs",
   "type": "module",
   "scripts": {
     "dev": "node app.mjs",
-    "start": "nodemon app.mjs"
+    "start": "node app.mjs"
   },
   "keywords": [],
   "author": "",
